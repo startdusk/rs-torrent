@@ -2,18 +2,20 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum BencodeError {
-    #[error("expect number but got {0}")]
-    ErrNumber(i64),
+    #[error("expect number")]
+    ExpectNumberError,
     #[error("expect colon(:) but got {0}")]
-    ErrColon(String),
+    ExpectColonError(String),
     #[error("expect char i bot got {0}")]
-    ErrEpI(String),
+    ExpectCharIError(u8),
     #[error("expect char e bot got {0}")]
-    ErrEpE(String),
+    ExpectCharEError(u8),
     #[error("wrong type")]
-    ErrTyp,
+    WrongType,
     #[error("invalid bencode")]
     Invalid,
+    #[error("EOF")]
+    EOF,
     #[error("unknown bencode error")]
     Unknown,
 }

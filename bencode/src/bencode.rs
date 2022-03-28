@@ -4,17 +4,17 @@ use std::collections::HashMap;
 use std::hash::BuildHasher;
 use std::io::Write;
 
-impl BObject {
+impl BenObject {
     pub fn bencode<W>(&self, w: &mut W) -> usize
     where
         W: Write,
     {
         let mut wlen = 0;
         match *self {
-            BObject::Int(num) => wlen += write_int(w, num),
-            BObject::Str(ref s) => wlen += write_string(w, s),
-            BObject::List(ref list) => wlen += write_list(w, list),
-            BObject::Dict(ref dict) => wlen += write_dict(w, dict),
+            BenObject::Int(num) => wlen += write_int(w, num),
+            BenObject::Str(ref s) => wlen += write_string(w, s),
+            BenObject::List(ref list) => wlen += write_list(w, list),
+            BenObject::Dict(ref dict) => wlen += write_dict(w, dict),
         }
 
         wlen
@@ -29,7 +29,7 @@ impl BObject {
 fn write_list<W, L>(w: &mut W, list: L) -> usize
 where
     W: Write,
-    L: AsRef<[BObject]>,
+    L: AsRef<[BenObject]>,
 {
     let mut wlen = 0;
     let list = list.as_ref();
@@ -50,12 +50,12 @@ where
 // d4:spaml1:a1:bee 表示 {"spam":["a","b"]}
 // de 表示 {}
 // 注意：key 是 BE字节串，而不是字符串，因此 key 的比较是二进制比较而不是字符串比较
-fn write_dict<W, S>(w: &mut W, dict: &HashMap<String, BObject, S>) -> usize
+fn write_dict<W, S>(w: &mut W, dict: &HashMap<String, BenObject, S>) -> usize
 where
     W: Write,
     S: BuildHasher,
 {
-    let mut sorted = dict.iter().collect::<Vec<(&String, &BObject)>>();
+    let mut sorted = dict.iter().collect::<Vec<(&String, &BenObject)>>();
     sorted.sort_by_key(|&(key, _)| key.as_bytes());
     let mut wlen = 0;
     w.write_all(&[DICT_PREFIX]).ok();

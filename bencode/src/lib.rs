@@ -20,9 +20,9 @@ const ZERO_ASCII: u8 = 48; // '0'
 const NINE_ASCII: u8 = 57; // '9'
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum BObject {
+pub enum BenObject {
     Str(String),
     Int(i64),
-    List(Vec<BObject>),
-    Dict(HashMap<String, BObject>),
+    List(Vec<BenObject>),
+    Dict(HashMap<String, BenObject>),
 }

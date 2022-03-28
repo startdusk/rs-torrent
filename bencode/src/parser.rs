@@ -1,30 +1,102 @@
 use super::*;
 
-impl BObject {
-    // pub fn parse(data: &mut ByteBuffer) -> Result<BObject, BencodeError> {
+impl BenObject {
+    fn parse(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
+        match Self::peek_byte(r)? {
+            DICT_PREFIX => {
+                r.advance(1);
+                let mut dict = HashMap::new();
+                loop {
+                    match r.peek() {
+                        Some(&b) => {
+                            if b == LIST_POSTFIX {
+                                r.advance(1);
+                                return Ok(BenObject::Dict(dict));
+                            }
+                        }
+                        None => return Err(BencodeError::EOF),
+                    }
 
-    // }
+                    let mut key;
+                    match read_string(r) {
+                        Ok(obj) => {
+                            if let BenObject::Str(k) = obj {
+                                key = k
+                            }
+                        }
+                        Err(e) => return Err(e),
+                    };
+
+                    let mut val;
+                    match Self::parse(r) {
+                        Ok(obj) => val = obj,
+                        Err(e) => return Err(e),
+                    }
+                    // dict.insert(key, val);
+                }
+            }
+            LIST_PREFIX => {
+                r.advance(1);
+                let mut list = vec![];
+                while Self::peek_byte(r)? != LIST_POSTFIX {
+                    list.push(Self::parse(r)?);
+                }
+                r.advance(1);
+                Ok(BenObject::List(list))
+            }
+            INT_PREFIX => read_int(r),
+            _ => read_string(r),
+        }
+    }
+
+    fn peek_byte(bytes: &mut ByteBuffer) -> Result<u8, BencodeError> {
+        match bytes.peek() {
+            Some(&byte) => Ok(byte),
+            None => Err(BencodeError::EOF),
+        }
+    }
 }
 
 // ANCHOR: decoder
+fn read_string(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
+    let (num, len) = read_decimal(r);
+    if len == 0 {
+        return Err(BencodeError::ExpectNumberError);
+    }
 
-// fn decode_int(r: &mut ByteBuffer, delimiter: u8) -> Result<BObject> {
-//     if let Ok(b) = r.read_bytes(1) {
-//         if b != b"i" {
-//             // TODO: define error with thiserr
-//             return Err("expect char i");
-//         }
-//     }
-//     decode_decimal(r);
-//     if let Ok(b) = r.read_bytes(1) {
-//         if b != b"e" {
-//             // TODO: define error with thiserr
-//             return Err("expect char e");
-//         }
-//     }
-// }
+    let mut string = String::with_capacity(num as usize);
+    for _ in 0..len {
+        if let Some(b) = r.next() {
+            string.push(char::from(*b));
+        }
+    }
 
-fn decode_decimal(r: &mut ByteBuffer) -> (i64, i64) {
+    Ok(BenObject::Str(string))
+}
+
+fn read_int(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
+    match r.next() {
+        Some(b) => {
+            if b != &INT_PREFIX {
+                return Err(BencodeError::ExpectCharIError(*b));
+            }
+        }
+        None => return Err(BencodeError::EOF),
+    }
+    let (val, _) = read_decimal(r);
+    match r.next() {
+        Some(b) => {
+            if b != &INT_POSTFIX {
+                return Err(BencodeError::ExpectCharEError(*b));
+            }
+        }
+        None => return Err(BencodeError::EOF),
+    }
+
+    Ok(BenObject::Int(val))
+}
+
+fn read_decimal(r: &mut ByteBuffer) -> (i64, i64) {
     let mut sign = 1;
     let mut val = 0;
     let mut len = 0;
