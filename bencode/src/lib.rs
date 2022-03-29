@@ -96,7 +96,7 @@ impl fmt::Display for BenObject {
                     .sorted_by_key(|&(key, _)| key)
                     .format_with(", ", |(k, v), f| f(&format_args!(
                         r#"("{}", {})"#,
-                        // 转成 char 才能打印出原始的key
+                        // 转成 char 才能打印出原始的key(不转的话是字节)
                         k.as_bytes().to_vec().iter().map(|b| *b as char).format(""),
                         v
                     )))
