@@ -1,2 +1,2 @@
 [workspace]
-members = ["bencode"]
+members = ["bencode", "torrent"]
