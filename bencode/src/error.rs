@@ -19,7 +19,7 @@ pub enum BencodeError {
 	#[error("EOF")]
 	EOF,
 	#[error(transparent)]
-	Io(#[from] ::std::io::Error),
+	IOError(#[from] ::std::io::Error),
 	#[error("unknown bencode error")]
 	Unknown,
 }

@@ -1,7 +1,7 @@
 use super::*;
 
 impl BenObject {
-	fn parse(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
+	pub fn parse(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
 		match Self::peek_byte(r)? {
 			DICT_PREFIX => {
 				r.advance(1);
