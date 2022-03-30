@@ -20,12 +20,14 @@ const STR_DELIMITER: u8 = b':';
 const ZERO: u8 = b'0';
 const MINUS: u8 = b'-';
 
+pub type Dict = HashMap<String, BenObject>;
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum BenObject {
     Str(String),
     Int(i64),
     List(Vec<BenObject>),
-    Dict(HashMap<String, BenObject>),
+    Dict(Dict),
 }
 
 impl From<u8> for BenObject {

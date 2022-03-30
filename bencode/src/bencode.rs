@@ -5,7 +5,13 @@ use std::hash::BuildHasher;
 use std::io::Write;
 
 impl BenObject {
-	pub fn bencode<W>(&self, w: &mut W) -> Result<usize, BencodeError>
+	pub fn bencode(&self) -> Result<Vec<u8>, BencodeError> {
+		let mut w = Vec::new();
+		let _ = self.write_into(&mut w)?;
+		Ok(w)
+	}
+
+	pub fn write_into<W>(&self, w: &mut W) -> Result<usize, BencodeError>
 	where
 		W: Write,
 	{
@@ -36,7 +42,7 @@ where
 	w.write_all(&[LIST_PREFIX])?;
 	wlen += 1;
 	for item in list {
-		wlen += item.bencode(w)?;
+		wlen += item.write_into(w)?;
 	}
 	w.write_all(&[LIST_POSTFIX])?;
 	wlen += 1;
@@ -62,7 +68,7 @@ where
 	wlen += 1;
 	for (key, val) in sorted {
 		wlen += write_string(w, key)?;
-		wlen += val.bencode(w)?;
+		wlen += val.write_into(w)?;
 	}
 	w.write_all(&[DICT_POSTFIX])?;
 	wlen += 1;
@@ -87,6 +93,7 @@ where
 	w.flush()?;
 	Ok(wlen)
 }
+
 // 整数的格式为 i整数e，其中 整数 是 ASCII 编码格式的整数字符串
 // i1234e 表示整数 1234
 // 注意：
@@ -164,11 +171,21 @@ mod tests {
 	}
 
 	#[test]
+	fn test_bencode_int() {
+		let cases = [(999, 5, "i999e"), (0, 3, "i0e"), (-99, 5, "i-99e")];
+		for cc in cases {
+			let vec = BenObject::Int(cc.0).bencode().unwrap();
+			assert_eq!(vec.len(), cc.1);
+			assert_eq!(vec, cc.2.as_bytes().to_vec());
+		}
+	}
+
+	#[test]
 	fn test_write_string() {
 		let cases = [
-			(String::from("spam"), "4:spam"),
-			(String::from("to"), "2:to"),
-			(String::from(""), "0:"),
+			("spam".to_string(), "4:spam"),
+			("to".to_string(), "2:to"),
+			("".to_string(), "0:"),
 		];
 		for cc in cases {
 			let mut vec = Vec::new();
@@ -184,5 +201,51 @@ mod tests {
 		let wlen = write_string(&mut vec, string).unwrap();
 		assert_eq!(wlen, 28);
 		assert_eq!(vec, "25:abcdefghijklmnopqrstuvwxy".as_bytes().to_vec());
+	}
+	#[test]
+	fn test_bencode_string() {
+		let cases = [
+			("spam".to_string(), 6, "4:spam"),
+			("to".to_string(), 4, "2:to"),
+			("".to_string(), 2, "0:"),
+		];
+		for cc in cases {
+			let vec = BenObject::Str(cc.0).bencode().unwrap();
+			assert_eq!(vec.len(), cc.1);
+			assert_eq!(vec, cc.2.as_bytes().to_vec());
+		}
+		let mut string = String::new();
+		for c in 'a'..'z' {
+			string.push(c);
+		}
+		let vec = BenObject::Str(string).bencode().unwrap();
+		assert_eq!(vec.len(), 28);
+		assert_eq!(vec, "25:abcdefghijklmnopqrstuvwxy".as_bytes().to_vec());
+	}
+
+	#[test]
+	fn test_bencode_list() {
+		let vec = BenObject::List(vec![BenObject::Int(0), BenObject::Str("spam".to_string())])
+			.bencode()
+			.unwrap();
+		assert_eq!(vec, "li0e4:spame".as_bytes().to_vec())
+	}
+	#[test]
+	fn test_bencode_dict() {
+		let vec = BenObject::Dict(HashMap::from_iter(
+			vec![
+				(
+					"cow".to_string(),
+					BenObject::Dict(HashMap::from_iter(
+						vec![("moo".to_string(), BenObject::Int(4))].into_iter(),
+					)),
+				),
+				("spam".to_string(), BenObject::Str("eggs".to_string())),
+			]
+			.into_iter(),
+		))
+		.bencode()
+		.unwrap();
+		assert_eq!(vec, "d3:cowd3:mooi4ee4:spam4:eggse".as_bytes().to_vec());
 	}
 }

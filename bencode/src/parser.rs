@@ -5,6 +5,7 @@ impl BenObject {
 		match Self::peek_byte(r)? {
 			DICT_PREFIX => {
 				r.advance(1);
+				// TODO: dict 必须是有序的？？？
 				let mut dict = HashMap::new();
 				loop {
 					let b = r.peek().ok_or(BencodeError::EOF)?;
