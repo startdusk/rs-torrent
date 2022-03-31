@@ -326,5 +326,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn it_work() {}
+	fn test_torrent_parse() {
+		
+	}
 }

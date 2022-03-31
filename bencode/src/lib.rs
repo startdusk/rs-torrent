@@ -6,6 +6,7 @@ use std::fmt;
 pub mod bencode;
 pub mod byte_buffer;
 pub mod error;
+pub mod marcos;
 pub mod parser;
 pub use crate::byte_buffer::ByteBuffer;
 pub use crate::error::BencodeError;
