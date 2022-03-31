@@ -24,7 +24,7 @@ pub type Dict = HashMap<String, BenObject>;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum BenObject {
-    Str(String),
+    String(String),
     Int(i64),
     List(Vec<BenObject>),
     Dict(Dict),
@@ -74,20 +74,20 @@ impl From<i64> for BenObject {
 
 impl<'a> From<&'a str> for BenObject {
     fn from(val: &'a str) -> BenObject {
-        BenObject::Str(val.to_owned())
+        BenObject::String(val.to_owned())
     }
 }
 
 impl From<String> for BenObject {
     fn from(val: String) -> BenObject {
-        BenObject::Str(val)
+        BenObject::String(val)
     }
 }
 
 impl fmt::Display for BenObject {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            BenObject::Str(ref string) => write!(f, r#""{}""#, string),
+            BenObject::String(ref string) => write!(f, r#""{}""#, string),
             BenObject::Int(ref int) => write!(f, "{}", int),
             BenObject::List(ref list) => write!(f, "[{}]", itertools::join(list, ", ")),
             BenObject::Dict(ref dict) => write!(
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_display_string() {
-        assert_eq!(BenObject::Str("".to_string()).to_string(), r#""""#);
+        assert_eq!(BenObject::String("".to_string()).to_string(), r#""""#);
     }
 
     #[test]
@@ -124,8 +124,11 @@ mod tests {
     #[test]
     fn test_display_list() {
         assert_eq!(
-            BenObject::List(vec![BenObject::Int(0), BenObject::Str("spam".to_string())])
-                .to_string(),
+            BenObject::List(vec![
+                BenObject::Int(0),
+                BenObject::String("spam".to_string())
+            ])
+            .to_string(),
             r#"[0, "spam"]"#
         );
     }
@@ -141,7 +144,7 @@ mod tests {
                             vec![("moo".to_string(), BenObject::Int(4))].into_iter()
                         ))
                     ),
-                    ("spam".to_string(), BenObject::Str("eggs".to_string()))
+                    ("spam".to_string(), BenObject::String("eggs".to_string()))
                 ]
                 .into_iter()
             ))

@@ -1,6 +1,13 @@
 use super::*;
 
 impl BenObject {
+	pub fn from_bytes<T>(bytes: T) -> Result<BenObject, BencodeError>
+	where
+		T: AsRef<[u8]>,
+	{
+		let mut buf = ByteBuffer::new(bytes.as_ref());
+		Ok(BenObject::parse(&mut buf)?)
+	}
 	pub fn parse(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
 		match Self::peek_byte(r)? {
 			DICT_PREFIX => {
@@ -15,7 +22,7 @@ impl BenObject {
 					}
 
 					let key = match read_string(r)? {
-						BenObject::Str(k) => k,
+						BenObject::String(k) => k,
 						_ => return Err(BencodeError::ExpectStringError),
 					};
 
@@ -65,7 +72,7 @@ fn read_string(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
 		string.push(char::from(*b));
 	}
 
-	Ok(BenObject::Str(string))
+	Ok(BenObject::String(string))
 }
 
 // i333e 表示数字 333
@@ -126,7 +133,7 @@ mod tests {
 		for cc in cases {
 			let mut buf = ByteBuffer::new(cc.0.as_bytes());
 			let obj = read_string(&mut buf).unwrap();
-			if let BenObject::Str(string) = obj {
+			if let BenObject::String(string) = obj {
 				assert_eq!(string, cc.1);
 			} else {
 				panic!("expect bencode string!!!")
@@ -162,7 +169,7 @@ mod tests {
 					_ => panic!("expect list index 0 int"),
 				};
 				match &list[1] {
-					BenObject::Str(string) => {
+					BenObject::String(string) => {
 						assert_eq!(string, "archer")
 					}
 					_ => panic!("expect list index 1 string"),
@@ -186,7 +193,7 @@ mod tests {
 			BenObject::Dict(ref dict) => {
 				assert_eq!(dict.len(), 2);
 				match &dict["name"] {
-					BenObject::Str(string) => {
+					BenObject::String(string) => {
 						assert_eq!(string, "ben")
 					}
 					_ => panic!("expect dict key `name`"),
@@ -208,7 +215,7 @@ mod tests {
 		// { "user": { "name": "ben", "age": 29 }, "value": [80, 85, 90] }
 		let mut buf = ByteBuffer::new(source.as_bytes());
 		let user_val = HashMap::from([
-			("name".to_string(), BenObject::Str("ben".to_string())),
+			("name".to_string(), BenObject::String("ben".to_string())),
 			("age".to_string(), BenObject::Int(29)),
 		]);
 		match BenObject::parse(&mut buf).unwrap() {
