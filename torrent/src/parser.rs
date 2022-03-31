@@ -22,12 +22,12 @@ impl TorrentFile {
 					encoding: Self::encoding(dict)?,
 				}),
 				Some(_) => {
-					return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+					return Err(TorrentError::ParseError(Cow::Borrowed(
 						"`info` is not a dict.",
 					)))
 				}
 				None => {
-					return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+					return Err(TorrentError::ParseError(Cow::Borrowed(
 						"`info` does not exist.",
 					)))
 				}
@@ -40,12 +40,12 @@ impl TorrentFile {
 		match dict.remove("announce") {
 			Some(BenObject::String(url)) => Ok(url),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`announce` does not map to string (or maps to invalid UTF8).",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`announce` does not exist.",
 				)))
 			}
@@ -56,7 +56,7 @@ impl TorrentFile {
 		match dict.remove("creation date") {
 			Some(BenObject::String(date)) => Ok(Some(date)),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`creation date` does not map to string (or maps to invalid UTF8).",
 				)))
 			}
@@ -68,7 +68,7 @@ impl TorrentFile {
 		match dict.remove("comment") {
 			Some(BenObject::String(comment)) => Ok(Some(comment)),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`comment` does not map to string (or maps to invalid UTF8).",
 				)))
 			}
@@ -80,7 +80,7 @@ impl TorrentFile {
 		match dict.remove("created by") {
 			Some(BenObject::String(created)) => Ok(Some(created)),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`created by` does not map to string (or maps to invalid UTF8).",
 				)))
 			}
@@ -92,7 +92,7 @@ impl TorrentFile {
 		match dict.remove("encoding") {
 			Some(BenObject::String(encoding)) => Ok(Some(encoding)),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`encoding` does not map to string (or maps to invalid UTF8).",
 				)))
 			}
@@ -110,7 +110,7 @@ impl TorrentFile {
 				Ok(Some(announces))
 			}
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`announce-list` does not map to a list.",
 				)))
 			}
@@ -126,7 +126,7 @@ impl TorrentFile {
 					match obj {
 						BenObject::String(url) => urls.push(url),
 						_ => {
-							return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+							return Err(TorrentError::ParseError(Cow::Borrowed(
 								"`announce-list` element is not a string.",
 							)))
 						}
@@ -135,7 +135,7 @@ impl TorrentFile {
 				Ok(urls)
 			}
 			_ => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`announce-list` does not have any element.",
 				)))
 			}
@@ -146,12 +146,12 @@ impl TorrentFile {
 		match dict.remove("name") {
 			Some(BenObject::String(name)) => Ok(name),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`name` does not map to a string (or maps to invalid UTF8).",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`name` does not exist.",
 				)))
 			}
@@ -162,12 +162,12 @@ impl TorrentFile {
 		match dict.remove("piece length") {
 			Some(BenObject::Int(len)) => Ok(len),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`piece length` does not map to a string (or maps to invalid UTF8).",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`piece length` does not exist.",
 				)))
 			}
@@ -178,12 +178,12 @@ impl TorrentFile {
 		match dict.remove("length") {
 			Some(BenObject::Int(len)) => Ok(len),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`length` does not map to a int.",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`length` does not exist.",
 				)))
 			}
@@ -194,7 +194,7 @@ impl TorrentFile {
 		match dict.remove("md5sum") {
 			Some(BenObject::String(sum)) => Ok(Some(sum)),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`md5sum` does not map to a string (or maps to invalid UTF8).",
 				)))
 			}
@@ -210,18 +210,18 @@ impl TorrentFile {
 					if let BenObject::String(pair) = p {
 						pb.push(pair);
 					} else {
-						return Err(TorrentError::TorrentParseError(Cow::Borrowed("")));
+						return Err(TorrentError::ParseError(Cow::Borrowed("")));
 					}
 				}
 				Ok(pb)
 			}
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`path` does not map to a list.",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`path` does not exist.",
 				)))
 			}
@@ -240,13 +240,13 @@ impl TorrentFile {
 							path: Self::path(dict)?,
 						});
 					} else {
-						return Err(TorrentError::TorrentParseError(Cow::Borrowed("")));
+						return Err(TorrentError::ParseError(Cow::Borrowed("")));
 					}
 				}
 				Ok(files)
 			}
 			_ => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"multiple file field `files` is not a list",
 				)))
 			}
@@ -257,12 +257,12 @@ impl TorrentFile {
 		match dict.remove("pieces") {
 			Some(BenObject::String(p)) => Ok(p.as_bytes().to_vec()),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`pieces` does not map to a int.",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`pieces` does not exist.",
 				)))
 			}
@@ -273,7 +273,7 @@ impl TorrentFile {
 		match dict.remove("private") {
 			Some(BenObject::Int(p)) => Ok(Some(p)),
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`private` does not map to a int.",
 				)))
 			}
@@ -308,12 +308,12 @@ impl TorrentFile {
 				}
 			}
 			Some(_) => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`info` is not a dict.",
 				)))
 			}
 			None => {
-				return Err(TorrentError::TorrentParseError(Cow::Borrowed(
+				return Err(TorrentError::ParseError(Cow::Borrowed(
 					"`info` does not exist.",
 				)))
 			}
