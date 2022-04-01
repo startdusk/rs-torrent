@@ -2,8 +2,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum BencodeError {
-	#[error("string format prefix must be a number")]
-	ExpectNumberError,
+	#[error("string format prefix must be a number but got: num={0}, len={1}")]
+	ExpectNumberError(i64, i64),
 	#[error("expect string")]
 	ExpectStringError,
 	#[error("expect colon(:)")]

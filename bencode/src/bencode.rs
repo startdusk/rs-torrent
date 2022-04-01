@@ -195,12 +195,13 @@ mod tests {
 
 	#[test]
 	fn test_bencode_list() {
-		let vec = BenObject::List(vec![
-			BenObject::Int(0),
-			BenObject::String("spam".to_string()),
-		])
-		.bencode()
-		.unwrap();
+		let vec = benobject!([0, "spam"]).bencode().unwrap();
+		// let vec = BenObject::List(vec![
+		// 	BenObject::Int(0),
+		// 	BenObject::String("spam".to_string()),
+		// ])
+		// .bencode()
+		// .unwrap();
 		assert_eq!(vec, "li0e4:spame".as_bytes().to_vec())
 	}
 	#[test]

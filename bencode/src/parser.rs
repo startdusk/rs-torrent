@@ -16,11 +16,10 @@ impl BenObject {
 				let mut dict = HashMap::new();
 				loop {
 					let b = r.peek().ok_or(BencodeError::EOF)?;
-					if *b == LIST_POSTFIX {
+					if *b == DICT_POSTFIX {
 						r.advance(1);
 						break;
 					}
-
 					let key = match read_string(r)? {
 						BenObject::String(k) => k,
 						_ => return Err(BencodeError::ExpectStringError),
@@ -58,7 +57,7 @@ impl BenObject {
 fn read_string(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
 	let (num, len) = read_decimal(r)?;
 	if len == 0 {
-		return Err(BencodeError::ExpectNumberError);
+		return Err(BencodeError::ExpectNumberError(num, len));
 	}
 
 	let b = r.next().ok_or(BencodeError::EOF)?;

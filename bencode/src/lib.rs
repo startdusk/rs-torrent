@@ -3,11 +3,12 @@ use std::collections::HashMap;
 use std::convert::From;
 use std::fmt;
 
-pub mod bencode;
-pub mod byte_buffer;
-pub mod error;
-pub mod marcos;
-pub mod parser;
+mod macros;
+
+mod bencode;
+mod byte_buffer;
+mod error;
+mod parser;
 pub use crate::byte_buffer::ByteBuffer;
 pub use crate::error::BencodeError;
 
@@ -124,14 +125,7 @@ mod tests {
 
     #[test]
     fn test_display_list() {
-        assert_eq!(
-            BenObject::List(vec![
-                BenObject::Int(0),
-                BenObject::String("spam".to_string())
-            ])
-            .to_string(),
-            r#"[0, "spam"]"#
-        );
+        assert_eq!(benobject!([0, "spam"]).to_string(), r#"[0, "spam"]"#);
     }
 
     #[test]

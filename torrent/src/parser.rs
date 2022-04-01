@@ -11,27 +11,15 @@ impl TorrentFile {
 	{
 		let mut obj = BenObject::from_bytes(bytes)?;
 		match obj {
-			BenObject::Dict(ref mut dict) => match dict.remove("info") {
-				Some(BenObject::Dict(ref mut info)) => Ok(TorrentFile {
-					info: Self::info(info)?,
-					announce: Self::announce(dict)?,
-					announce_list: Self::announce_list(dict)?,
-					creation_date: Self::creation_date(dict)?,
-					comment: Self::comment(dict)?,
-					created_by: Self::created_by(dict)?,
-					encoding: Self::encoding(dict)?,
-				}),
-				Some(_) => {
-					return Err(TorrentError::ParseError(Cow::Borrowed(
-						"`info` is not a dict.",
-					)))
-				}
-				None => {
-					return Err(TorrentError::ParseError(Cow::Borrowed(
-						"`info` does not exist.",
-					)))
-				}
-			},
+			BenObject::Dict(ref mut dict) => Ok(TorrentFile {
+				info: Self::info(dict)?,
+				announce: Self::announce(dict)?,
+				announce_list: Self::announce_list(dict)?,
+				creation_date: Self::creation_date(dict)?,
+				comment: Self::comment(dict)?,
+				created_by: Self::created_by(dict)?,
+				encoding: Self::encoding(dict)?,
+			}),
 			_ => return Err(TorrentError::InvalidTorrent),
 		}
 	}
@@ -52,12 +40,12 @@ impl TorrentFile {
 		}
 	}
 
-	fn creation_date(dict: &mut Dict) -> Result<Option<String>, TorrentError> {
+	fn creation_date(dict: &mut Dict) -> Result<Option<i64>, TorrentError> {
 		match dict.remove("creation date") {
-			Some(BenObject::String(date)) => Ok(Some(date)),
+			Some(BenObject::Int(date)) => Ok(Some(date)),
 			Some(_) => {
 				return Err(TorrentError::ParseError(Cow::Borrowed(
-					"`creation date` does not map to string (or maps to invalid UTF8).",
+					"`creation date` does not map to int.",
 				)))
 			}
 			None => Ok(None),
@@ -323,10 +311,89 @@ impl TorrentFile {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 
+	use super::*;
 	#[test]
 	fn test_torrent_parse() {
-		
+		let pieces: Vec<u8> = vec![
+			0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+			0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13,
+		];
+		let pieces_str = std::str::from_utf8(pieces.as_slice()).unwrap();
+		let bytes = benobject!({
+			("info", {
+				("piece length", 2),
+				("pieces", pieces_str),
+				("name", "startdusk"),
+				("length", 2),
+			}),
+			("announce", "https://www.google.com"),
+		})
+		.bencode()
+		.unwrap();
+
+		assert_eq!(
+			TorrentFile::parse(bytes).unwrap(),
+			TorrentFile {
+				info: Info::SingleFile(SingleFile {
+					piece_length: 2,
+					pieces,
+					private: None,
+					name: "startdusk".to_owned(),
+					length: 2,
+					md5sum: None,
+				}),
+				announce: "https://www.google.com".to_owned(),
+				announce_list: None,
+				creation_date: None,
+				comment: None,
+				created_by: None,
+				encoding: None
+			}
+		);
+
+		// d
+		// 	8:announce
+		// 		41:http://bttracker.debian.org:6969/announce
+		// 	7:comment
+		// 		35:"Debian CD from cdimage.debian.org"
+		// 	13:creation date
+		// 		i1573903810e
+		// 	4:info
+		// 		d
+		// 			6:length
+		// 				i351272960e
+		// 			4:name
+		// 				31:debian-10.2.0-amd64-netinst.iso
+		// 			12:piece length
+		// 				i262144e
+		// 			6:pieces
+		// 				39:binary blob of the hashes of each piece
+		// 		e
+		// e
+
+		let bytes = r#"d8:announce41:http://bttracker.debian.org:6969/announce7:comment35:"Debian CD from cdimage.debian.org"13:creation datei1573903810e4:infod6:lengthi351272960e4:name31:debian-10.2.0-amd64-netinst.iso12:piece lengthi262144e6:pieces39:binary blob of the hashes of each pieceee"#;
+		dbg!(&bytes);
+		assert_eq!(
+			TorrentFile::parse(bytes).unwrap(),
+			TorrentFile {
+				info: Info::SingleFile(SingleFile {
+					piece_length: 262144,
+					pieces: "binary blob of the hashes of each piece"
+						.as_bytes()
+						.to_vec(),
+					private: None,
+					name: "debian-10.2.0-amd64-netinst.iso".to_owned(),
+					length: 351272960,
+					md5sum: None,
+				}),
+				announce: "http://bttracker.debian.org:6969/announce".to_owned(),
+				announce_list: None,
+				creation_date: Some(1573903810),
+				comment: Some(r#""Debian CD from cdimage.debian.org""#.to_owned()),
+				created_by: None,
+				encoding: None
+			}
+		);
 	}
 }

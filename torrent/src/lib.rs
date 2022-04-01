@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+#[macro_use]
+extern crate bencode;
+
 pub mod error;
 pub mod marshal;
 pub mod parser;
@@ -15,7 +18,7 @@ pub struct TorrentFile {
     pub info: Info,
     pub announce: String,
     pub announce_list: Option<AnnounceList>,
-    pub creation_date: Option<String>,
+    pub creation_date: Option<i64>,
     pub comment: Option<String>,
     pub created_by: Option<String>,
     pub encoding: Option<String>,
