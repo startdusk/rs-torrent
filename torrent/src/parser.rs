@@ -311,10 +311,9 @@ impl TorrentFile {
 
 #[cfg(test)]
 mod tests {
-
 	use super::*;
 	#[test]
-	fn test_torrent_parse() {
+	fn test_torrent_single_file_parse() {
 		let pieces: Vec<u8> = vec![
 			0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
 			0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13,
@@ -373,7 +372,6 @@ mod tests {
 		// e
 
 		let bytes = r#"d8:announce41:http://bttracker.debian.org:6969/announce7:comment35:"Debian CD from cdimage.debian.org"13:creation datei1573903810e4:infod6:lengthi351272960e4:name31:debian-10.2.0-amd64-netinst.iso12:piece lengthi262144e6:pieces39:binary blob of the hashes of each pieceee"#;
-		dbg!(&bytes);
 		assert_eq!(
 			TorrentFile::parse(bytes).unwrap(),
 			TorrentFile {
@@ -391,6 +389,65 @@ mod tests {
 				announce_list: None,
 				creation_date: Some(1573903810),
 				comment: Some(r#""Debian CD from cdimage.debian.org""#.to_owned()),
+				created_by: None,
+				encoding: None
+			}
+		);
+	}
+
+	#[test]
+	fn test_torrent_multiple_file_parse() {
+		let pieces: Vec<u8> = vec![
+			0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+			0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13,
+		];
+		let pieces_str = std::str::from_utf8(pieces.as_slice()).unwrap();
+		let bytes = benobject!({
+			("info", {
+				("name", "startdusk"),
+				("piece length", 2),
+				("pieces", pieces_str),
+				("files", [
+					{
+						("length", 512),
+						("path", ["a", "b", "c", "d.txt"])
+					},
+					{
+						("length", 1024),
+						("path", ["a", "b", "c", "f.txt"])
+					}
+				]),
+			}),
+			("announce", "https://www.google.com"),
+		})
+		.bencode()
+		.unwrap();
+
+		assert_eq!(
+			TorrentFile::parse(bytes).unwrap(),
+			TorrentFile {
+				info: Info::MultipleFile(MultipleFile {
+					name: "startdusk".to_owned(),
+					piece_length: 2,
+					pieces,
+					private: None,
+					files: vec![
+						File {
+							length: 512,
+							md5sum: None,
+							path: PathBuf::from(r"a/b/c/d.txt")
+						},
+						File {
+							length: 1024,
+							md5sum: None,
+							path: PathBuf::from(r"a/b/c/f.txt")
+						}
+					]
+				}),
+				announce: "https://www.google.com".to_owned(),
+				announce_list: None,
+				creation_date: None,
+				comment: None,
 				created_by: None,
 				encoding: None
 			}
