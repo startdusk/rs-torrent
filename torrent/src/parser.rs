@@ -452,5 +452,119 @@ mod tests {
 				encoding: None
 			}
 		);
+		// d
+		// 		8:announce
+		// 			41:http://bttracker.debian.org:6969/announce
+		// 		7:comment
+		// 			35:"Debian CD from cdimage.debian.org"
+		// 		13:creation date
+		// 			i1573903810e
+		// 		4:info
+		// 			d
+		// 				4:name
+		// 					31:debian-10.2.0-amd64-netinst.iso
+		// 				12:piece length
+		// 					i262144e
+		// 				6:pieces
+		// 					39:binary blob of the hashes of each piece
+		// 				5:files
+		// 					l
+		//						d
+		// 							6:length
+		// 								i512e
+		//							6:md5sum
+		// 								35:14e1b600b1fd579f47433b88e8d85291132
+		// 							4:path
+		// 								l
+		// 									1:a1:b1:c5:d.txt
+		// 								e
+		// 						e
+		// 						d
+		// 							6:length
+		// 								i1024e
+		//							6:md5sum
+		// 								32:1d4bbcfed31c6e01e90d8e4099e39eb7
+		// 							4:path
+		// 								l
+		// 									1:a1:b1:c5:f.txt
+		// 								e
+		// 						e
+		// 					e
+		// 			e
+		// e
+		let bytes = concat!(
+			"d",
+			"8:announce",
+			"41:http://bttracker.debian.org:6969/announce",
+			"7:comment",
+			r#"35:"Debian CD from cdimage.debian.org""#,
+			"13:creation date",
+			"i1573903810e",
+			"4:info",
+			"d",
+			"4:name",
+			"31:debian-10.2.0-amd64-netinst.iso",
+			"12:piece length",
+			"i262144e",
+			"6:pieces",
+			"39:binary blob of the hashes of each piece",
+			"5:files",
+			"l",
+			"d",
+			"6:length",
+			"i512e",
+			"6:md5sum",
+			"35:14e1b600b1fd579f47433b88e8d85291132",
+			"4:path",
+			"l",
+			"1:a1:b1:c5:d.txt",
+			"e",
+			"e",
+			"d",
+			"6:length",
+			"i1024e",
+			"6:md5sum",
+			"32:1d4bbcfed31c6e01e90d8e4099e39eb7",
+			"4:path",
+			"l",
+			"1:a1:b1:c5:f.txt",
+			"e",
+			"e",
+			"e",
+			"e",
+			"e"
+		);
+		// let bytes = r#"d8:announce41:http://bttracker.debian.org:6969/announce7:comment35:"Debian CD from cdimage.debian.org"13:creation datei1573903810e4:infod4:name31:debian-10.2.0-amd64-netinst.iso12:piece lengthi262144e6:pieces39:binary blob of the hashes of each piece5:filesld6:lengthi512e6:md5sum35:14e1b600b1fd579f47433b88e8d852911324:pathl1:a1:b1:c5:d.txteed6:lengthi1024e6:md5sum32:1d4bbcfed31c6e01e90d8e4099e39eb74:pathl1:a1:b1:c5:f.txteeeee"#;
+		assert_eq!(
+			TorrentFile::parse(bytes).unwrap(),
+			TorrentFile {
+				info: Info::MultipleFile(MultipleFile {
+					piece_length: 262144,
+					pieces: "binary blob of the hashes of each piece"
+						.as_bytes()
+						.to_vec(),
+					private: None,
+					name: "debian-10.2.0-amd64-netinst.iso".to_owned(),
+					files: vec![
+						File {
+							length: 512,
+							md5sum: Some("14e1b600b1fd579f47433b88e8d85291132".to_owned()),
+							path: PathBuf::from(r"a/b/c/d.txt")
+						},
+						File {
+							length: 1024,
+							md5sum: Some("1d4bbcfed31c6e01e90d8e4099e39eb7".to_owned()),
+							path: PathBuf::from(r"a/b/c/f.txt")
+						}
+					]
+				}),
+				announce: "http://bttracker.debian.org:6969/announce".to_owned(),
+				announce_list: None,
+				creation_date: Some(1573903810),
+				comment: Some(r#""Debian CD from cdimage.debian.org""#.to_owned()),
+				created_by: None,
+				encoding: None
+			}
+		);
 	}
 }

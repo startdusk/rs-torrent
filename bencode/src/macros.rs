@@ -1,5 +1,3 @@
-use super::*;
-
 #[macro_export]
 macro_rules! benobject {
     ([ $( $element:tt ),* ]) => {
@@ -45,7 +43,8 @@ macro_rules! benobject {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::BenObject;
+    use std::collections::HashMap;
     use std::iter::FromIterator;
 
     #[test]
