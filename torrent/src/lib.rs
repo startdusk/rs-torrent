@@ -57,18 +57,14 @@ pub enum Info {
 
 impl Info {
     pub fn hash(&self) -> Result<String, TorrentError> {
-        let mut hasher = Sha1::new();
         let mut map: Dict = HashMap::new();
-        match *self {
-            Self::SingleFile(ref signle) => {
-                hasher.update(benobject!({}).bencode()?);
-                let output = hasher.finalize();
-                // TODO: convert to string
-                Ok("".to_owned())
-            }
+        let output = match *self {
+            Self::SingleFile(ref signle) => Sha1::digest(benobject!({}).bencode()?).to_vec(),
             Self::MultipleFile(ref multiple) => {
-                panic!()
+                todo!()
             }
-        }
+        };
+        let h = String::from_utf8(output)?;
+        Ok(h)
     }
 }
