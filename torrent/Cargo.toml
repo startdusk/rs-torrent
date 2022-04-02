@@ -8,4 +8,6 @@ edition = "2021"
 
 [dependencies]
 thiserror = "1.0"
+sha1 = "0.10.1"
+base16ct = "0.1.1"
 bencode = { path = "../bencode" }

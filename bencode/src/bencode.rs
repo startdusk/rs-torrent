@@ -206,20 +206,28 @@ mod tests {
 	}
 	#[test]
 	fn test_bencode_dict() {
-		let vec = BenObject::Dict(HashMap::from_iter(
-			vec![
-				(
-					"cow".to_string(),
-					BenObject::Dict(HashMap::from_iter(
-						vec![("moo".to_string(), BenObject::Int(4))].into_iter(),
-					)),
-				),
-				("spam".to_string(), BenObject::String("eggs".to_string())),
-			]
-			.into_iter(),
-		))
+		let vec = benobject!({
+			("cow", {
+				("moo", 4)
+			}),
+			("spam", "eggs"),
+		})
 		.bencode()
 		.unwrap();
+		// let vec = BenObject::Dict(HashMap::from_iter(
+		// 	vec![
+		// 		(
+		// 			"cow".to_string(),
+		// 			BenObject::Dict(HashMap::from_iter(
+		// 				vec![("moo".to_string(), BenObject::Int(4))].into_iter(),
+		// 			)),
+		// 		),
+		// 		("spam".to_string(), BenObject::String("eggs".to_string())),
+		// 	]
+		// 	.into_iter(),
+		// ))
+		// .bencode()
+		// .unwrap();
 		assert_eq!(vec, "d3:cowd3:mooi4ee4:spam4:eggse".as_bytes().to_vec());
 	}
 }
