@@ -134,7 +134,7 @@ mod test_info {
     use super::*;
 
     #[test]
-    fn test_info_hash() {
+    fn test_into_single_file_hash() {
         let shash = Info::SingleFile(SingleFile {
             piece_length: 100,
             pieces: "1d4bbcfed31c6e01e90d8e4099e39eb7".to_owned(),
@@ -147,5 +147,30 @@ mod test_info {
         .unwrap();
 
         assert_eq!(shash, "b2a6a322290f3f8b146490501898cccb12f66f63".to_owned());
+    }
+    #[test]
+    fn test_into_multiple_file_hash() {
+        let shash = Info::MultipleFile(MultipleFile {
+            piece_length: 262144,
+            pieces: "binary blob of the hashes of each piece".to_owned(),
+            private: Some(1),
+            name: "debian-10.2.0-amd64-netinst.iso".to_owned(),
+            files: vec![
+                File {
+                    length: 512,
+                    md5sum: Some("14e1b600b1fd579f47433b88e8d85291132".to_owned()),
+                    path: PathBuf::from(r"a/b/c/d.txt"),
+                },
+                File {
+                    length: 1024,
+                    md5sum: Some("1d4bbcfed31c6e01e90d8e4099e39eb7".to_owned()),
+                    path: PathBuf::from(r"a/b/c/f.txt"),
+                },
+            ],
+        })
+        .hash_string()
+        .unwrap();
+
+        assert_eq!(shash, "330c0cca65ddcf93bafdc3fdf02a7c394bd5829d".to_owned());
     }
 }
