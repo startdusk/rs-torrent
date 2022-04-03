@@ -21,6 +21,10 @@ fn test_parse_single_file_torrent() {
         Some(r#""Debian CD from cdimage.debian.org""#.to_owned())
     );
 
+    assert_eq!(
+        parsed.info.hash_string().unwrap(),
+        "fa67ff3a6ba35ef676a2790ed7671bad57ebeb44".to_owned()
+    );
     if let Info::SingleFile(single) = parsed.info {
         assert_eq!(single.name, "debian-11.2.0-amd64-netinst.iso".to_owned());
         assert_eq!(single.length, 396361728);
