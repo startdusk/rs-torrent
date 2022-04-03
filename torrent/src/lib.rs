@@ -56,15 +56,96 @@ pub enum Info {
 }
 
 impl Info {
-    pub fn hash(&self) -> Result<String, TorrentError> {
+    pub fn hash_bytes(&self) -> Result<Vec<u8>, TorrentError> {
+        let output = self.marshal()?;
+        Ok(Sha1::digest(output).to_vec())
+    }
+    pub fn hash_string(&self) -> Result<String, TorrentError> {
+        let output = self.marshal()?;
+        Ok(format!("{:x}", Sha1::digest(output)))
+    }
+
+    fn marshal(&self) -> Result<Vec<u8>, TorrentError> {
         let mut map: Dict = HashMap::new();
         let output = match *self {
-            Self::SingleFile(ref signle) => Sha1::digest(benobject!({}).bencode()?).to_vec(),
+            Self::SingleFile(ref single) => {
+                map.insert(
+                    "piece length".to_owned(),
+                    BenObject::Int(single.piece_length),
+                );
+                map.insert(
+                    "pieces".to_owned(),
+                    BenObject::String(single.pieces.clone()),
+                );
+                if let Some(private) = single.private {
+                    map.insert("private".to_owned(), BenObject::Int(private));
+                }
+                map.insert("name".to_owned(), BenObject::String(single.name.clone()));
+                map.insert("length".to_owned(), BenObject::Int(single.length));
+                if let Some(md5sum) = &single.md5sum {
+                    map.insert("md5sum".to_owned(), BenObject::String(md5sum.clone()));
+                }
+                BenObject::Dict(map).bencode()?
+            }
             Self::MultipleFile(ref multiple) => {
-                todo!()
+                map.insert(
+                    "piece length".to_owned(),
+                    BenObject::Int(multiple.piece_length),
+                );
+                map.insert(
+                    "pieces".to_owned(),
+                    BenObject::String(multiple.pieces.clone()),
+                );
+                if let Some(private) = multiple.private {
+                    map.insert("private".to_owned(), BenObject::Int(private));
+                }
+                map.insert("name".to_owned(), BenObject::String(multiple.name.clone()));
+                let mut files = Vec::new();
+                for file in &multiple.files {
+                    let mut fmap: Dict = HashMap::new();
+                    fmap.insert("length".to_owned(), BenObject::Int(file.length));
+                    if let Some(md5sum) = &file.md5sum {
+                        fmap.insert("md5sum".to_owned(), BenObject::String(md5sum.clone()));
+                    }
+
+                    fmap.insert(
+                        "path".to_owned(),
+                        BenObject::List(
+                            file.path
+                                .iter()
+                                .map(|component| {
+                                    BenObject::String(component.to_string_lossy().into_owned())
+                                })
+                                .collect(),
+                        ),
+                    );
+                    files.push(BenObject::Dict(fmap));
+                }
+                map.insert("files".to_owned(), BenObject::List(files));
+                BenObject::Dict(map).bencode()?
             }
         };
-        let h = String::from_utf8(output)?;
-        Ok(h)
+        Ok(output)
+    }
+}
+
+#[cfg(test)]
+mod test_info {
+    use super::*;
+
+    #[test]
+    fn test_info_hash() {
+        let shash = Info::SingleFile(SingleFile {
+            piece_length: 100,
+            pieces: "1d4bbcfed31c6e01e90d8e4099e39eb7".to_owned(),
+            private: Some(0),
+            name: "startdusk".to_owned(),
+            length: 100,
+            md5sum: Some("todo!()".to_owned()),
+        })
+        .hash_string()
+        .unwrap();
+
+        assert_eq!(shash, "b2a6a322290f3f8b146490501898cccb12f66f63".to_owned());
     }
 }
