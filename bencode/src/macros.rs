@@ -3,6 +3,9 @@ macro_rules! benobject {
     ([ $( $element:tt ),* ]) => {
         $crate::BenObject::List(vec![ $( benobject!($element) ),* ])
     };
+    (( $( $element:tt ),* )) => {
+        $crate::BenObject::Bytes(vec![ $( $element ),* ])
+    };
     ([ $( $element:tt ),+ ,]) => {
         benobject!([ $( $element ),* ])
     };
@@ -104,7 +107,15 @@ mod tests {
             ])
         )
     }
+    #[test]
+    fn bytes_ok() {
+        assert_eq!(benobject!((0x01, 0x02)), BenObject::Bytes(vec![0x01, 0x02]))
+    }
 
+    #[test]
+    fn bytes_empty() {
+        assert_eq!(benobject!(()), BenObject::Bytes(vec![]))
+    }
     #[test]
     fn test_list_empty() {
         assert_eq!(benobject!([]), BenObject::List(vec![]))
@@ -113,7 +124,7 @@ mod tests {
     #[test]
     fn test_dict() {
         assert_eq!(
-            benobject!({ ("cow", { ("moo", 4), ("b00", 6) }), ("spam", "eggs") }),
+            benobject!({ ("cow", { ("moo", 4), ("b00", 6) }), ("spam", "eggs"), ("bytes", (133, 224, 155, 126)) }),
             BenObject::Dict(HashMap::from_iter(
                 vec![
                     (
@@ -127,6 +138,7 @@ mod tests {
                         )),
                     ),
                     ("spam".to_owned(), BenObject::String("eggs".to_owned())),
+                    ("bytes".to_owned(), BenObject::Bytes(vec![133, 224, 155, 126])),
                 ]
                 .into_iter(),
             ))

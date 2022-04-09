@@ -1,17 +1,15 @@
-use percent_encoding::{AsciiSet, NON_ALPHANUMERIC};
-/// Contains the characters that need to be URL encoded according to:
-/// https://en.wikipedia.org/wiki/Percent-encoding#Types_of_URI_characters
-const URL_ENCODE_RESERVED: &AsciiSet = &NON_ALPHANUMERIC
-    .remove(b'-')
-    .remove(b'_')
-    .remove(b'~')
-    .remove(b'.');
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use percent_encoding::{AsciiSet, NON_ALPHANUMERIC};
     #[test]
     fn it_works() {
+        /// Contains the characters that need to be URL encoded according to:
+        /// https://en.wikipedia.org/wiki/Percent-encoding#Types_of_URI_characters
+        const URL_ENCODE_RESERVED: &AsciiSet = &NON_ALPHANUMERIC
+            .remove(b'-')
+            .remove(b'_')
+            .remove(b'~')
+            .remove(b'.');
         let v = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         ];

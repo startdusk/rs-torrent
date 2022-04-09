@@ -104,7 +104,9 @@ impl BenObject {
 	{
 		let b = b.as_ref();
 		let slen = b.len();
-		let mut wlen = Self::write_decimal(w, slen as i64)?;
+		let mut wlen = 0;
+		w.write_all(&b.len().to_string().into_bytes())?;
+		wlen += 1;
 		w.write_all(&[STR_DELIMITER])?;
 		wlen += 1;
 		w.write_all(b)?;

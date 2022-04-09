@@ -4,7 +4,6 @@ use std::{
 };
 
 use torrent::{File, Info, TorrentFile};
-use tracker::Tracker;
 
 extern crate torrent;
 
@@ -36,26 +35,6 @@ fn test_parse_single_file_torrent() {
     } else {
         panic!("not a single file torrent")
     }
-
-    // dbg!(Tracker::build_url(
-    //     parsed.announce,
-    //     tracker::Request {
-    //         info_hash,
-    //         peer_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,],
-    //         port: 6881,
-    //         uploaded: 0,
-    //         downloaded: 0,
-    //         left: 39631728,
-    //         compact: 1,
-    //         no_peer_id: None,
-    //         event: None,
-    //         ip: None,
-    //         numwant: None,
-    //         key: None,
-    //         tracker_id: None
-    //     }
-    // ))
-    // .unwrap();
 }
 
 #[test]
@@ -70,7 +49,7 @@ fn test_parse_multiple_file_torrent() {
 
     assert_eq!(
         parsed.info.hash_string().unwrap(),
-        "1ff7cb0614d9969794ec33d5bfa5ff58e0965e14".to_owned()
+        "E9CE30881B905B809EC094BCB2F17D202627F05F".to_owned()
     );
     assert_eq!(
         parsed.announce,
@@ -103,7 +82,7 @@ fn test_parse_multiple_file_torrent() {
     let parsed = TorrentFile::parse(bytes).unwrap();
     assert_eq!(
         parsed.info.hash_string().unwrap(),
-        "0690595289cbc783688243e480cb1c1b48657dab".to_owned()
+        "69BAFA13168FBCD6961A67B83EE36899C29B33F0".to_owned()
     );
     assert_eq!(
         parsed.announce,

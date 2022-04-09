@@ -1,6 +1,7 @@
-use std::{io, net::IpAddr};
+use std::borrow::Cow;
+use std::net::IpAddr;
 
-use bencode::BenObject;
+use bencode::{BenObject, Dict};
 use error::TrackerError;
 use torrent::Sha1Hash;
 
@@ -19,17 +20,20 @@ const URL_ENCODE_RESERVED: &AsciiSet = &NON_ALPHANUMERIC
 
 pub type PeerId = [u8; 20];
 
+#[derive(Debug)]
 pub struct Peer {
     pub peer_id: String,
     pub ip: IpAddr,
     pub port: usize,
 }
 
+#[derive(Debug)]
 pub enum Peers {
     List(Vec<Peer>),
-    String(String),
+    Binary(Vec<u8>),
 }
 
+#[derive(Debug)]
 pub enum Event {
     Started,
     Completed,
@@ -46,13 +50,14 @@ impl Event {
     }
 }
 
+#[derive(Debug)]
 pub struct Request {
     pub info_hash: Sha1Hash,
     pub peer_id: PeerId,
     pub port: usize,
     pub uploaded: usize,
     pub downloaded: usize,
-    pub left: usize,
+    pub left: i64,
     pub compact: usize,
     pub no_peer_id: Option<bool>,
     pub event: Option<Event>,
@@ -62,14 +67,15 @@ pub struct Request {
     pub tracker_id: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct Response {
-    pub failure_reason: String,
+    pub failure_reason: Option<String>,
     pub warning_message: Option<String>,
     pub interval: usize,
     pub min_interval: Option<usize>,
-    pub tracker_id: String,
-    pub complete: usize,
-    pub incomplete: usize,
+    pub tracker_id: Option<String>,
+    pub complete: Option<i64>,
+    pub incomplete: Option<i64>,
     pub peers: Peers,
 }
 
@@ -109,23 +115,121 @@ impl Tracker {
         let mut obj = BenObject::from_bytes(bytes)?;
         match obj {
             BenObject::Dict(ref mut dict) => Ok(Response {
-                failure_reason: todo!(),
-                warning_message: todo!(),
-                interval: todo!(),
-                min_interval: todo!(),
-                tracker_id: todo!(),
-                complete: todo!(),
-                incomplete: todo!(),
-                peers: todo!(),
-                // info: Self::info(dict)?,
-                // announce: Self::announce(dict)?,
-                // announce_list: Self::announce_list(dict)?,
-                // creation_date: Self::creation_date(dict)?,
-                // comment: Self::comment(dict)?,
-                // created_by: Self::created_by(dict)?,
-                // encoding: Self::encoding(dict)?,
+                failure_reason: self.failure_reason(dict)?,
+                warning_message: self.warning_message(dict)?,
+                interval: self.interval(dict)?,
+                min_interval: self.min_interval(dict)?,
+                tracker_id: self.tracker_id(dict)?,
+                complete: self.complete(dict)?,
+                incomplete: self.incomplete(dict)?,
+                peers: self.peers(dict)?,
             }),
             _ => return Err(TrackerError::InvalidResponse),
+        }
+    }
+
+    fn peers(&self, dict: &mut Dict) -> Result<Peers, TrackerError> {
+        match dict.remove("peers") {
+            Some(BenObject::Bytes(peer)) => Ok(Peers::Binary(peer)),
+            Some(BenObject::List(list)) => {
+                let peers = Vec::with_capacity(list.len());
+                for p in list {}
+                Ok(Peers::List(peers))
+            }
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`peers` does not map to bytes or list.",
+                )))
+            }
+            None => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`peers` does not exist.",
+                )))
+            }
+        }
+    }
+    fn incomplete(&self, dict: &mut Dict) -> Result<Option<i64>, TrackerError> {
+        match dict.remove("incomplete") {
+            Some(BenObject::Int(incomplete)) => Ok(Some(incomplete)),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`incomplete` does not map to int.",
+                )))
+            }
+            None => Ok(None),
+        }
+    }
+    fn complete(&self, dict: &mut Dict) -> Result<Option<i64>, TrackerError> {
+        match dict.remove("complete") {
+            Some(BenObject::Int(complete)) => Ok(Some(complete)),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`complete` does not map to int.",
+                )))
+            }
+            None => Ok(None),
+        }
+    }
+    fn tracker_id(&self, dict: &mut Dict) -> Result<Option<String>, TrackerError> {
+        match dict.remove("tracker id") {
+            Some(BenObject::String(id)) => Ok(Some(id)),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`tracker id` does not map to string (or maps to invalid UTF8).",
+                )))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn min_interval(&self, dict: &mut Dict) -> Result<Option<usize>, TrackerError> {
+        match dict.remove("min interval") {
+            Some(BenObject::Int(min_interval)) => Ok(Some(min_interval as usize)),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`min interval` does not map to int.",
+                )))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn interval(&self, dict: &mut Dict) -> Result<usize, TrackerError> {
+        match dict.remove("interval") {
+            Some(BenObject::Int(interval)) => Ok(interval as usize),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`interval` does not map to int.",
+                )))
+            }
+            None => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`interval` does not exist.",
+                )))
+            }
+        }
+    }
+
+    fn warning_message(&self, dict: &mut Dict) -> Result<Option<String>, TrackerError> {
+        match dict.remove("warning_message") {
+            Some(BenObject::String(warn)) => Ok(Some(warn)),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`warning_message` does not map to string (or maps to invalid UTF8).",
+                )))
+            }
+            None => Ok(None),
+        }
+    }
+    fn failure_reason(&self, dict: &mut Dict) -> Result<Option<String>, TrackerError> {
+        match dict.remove("failure_reason") {
+            Some(BenObject::String(reason)) => Ok(Some(reason)),
+            Some(_) => {
+                return Err(TrackerError::ParseResponseError(Cow::Borrowed(
+                    "`failure_reason` does not map to string (or maps to invalid UTF8).",
+                )))
+            }
+            None => Ok(None),
         }
     }
 
@@ -175,32 +279,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_build_tracker_url() {
-        let tracker = Tracker::new("http://bttracker.debian.org:6969/announce".parse().unwrap());
-        tracker
-            .find_peers(Request {
-                info_hash: [
-                    40, 197, 81, 150, 245, 119, 83, 196, 10, 206, 182, 251, 88, 97, 126, 105, 149,
-                    167, 237, 219,
-                ],
-                peer_id: [
-                    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-                ],
-                port: 6881,
-                uploaded: 0,
-                downloaded: 0,
-                left: 39631728,
-                compact: 1,
-                no_peer_id: None,
-                event: None,
-                numwant: None,
-                key: None,
-                tracker_id: None,
-                ip: None,
-            })
-            .await
-            .unwrap();
-    }
+    async fn test_mock_tracker_resp() {}
 }
 
 // 构建tracker url
