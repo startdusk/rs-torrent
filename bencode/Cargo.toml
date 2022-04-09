@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 thiserror = "1.0"
 itertools = "0.10.3"
+blob = "0.3.0"

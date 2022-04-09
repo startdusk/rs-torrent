@@ -241,12 +241,12 @@ impl TorrentFile {
 		}
 	}
 
-	fn pieces(dict: &mut Dict) -> Result<String, TorrentError> {
+	fn pieces(dict: &mut Dict) -> Result<Vec<u8>, TorrentError> {
 		match dict.remove("pieces") {
-			Some(BenObject::String(p)) => Ok(p),
+			Some(BenObject::Bytes(bytes)) => Ok(bytes),
 			Some(_) => {
 				return Err(TorrentError::ParseError(Cow::Borrowed(
-					"`pieces` does not map to a int.",
+					"`pieces` does not map to bytes.",
 				)))
 			}
 			None => {
@@ -336,7 +336,7 @@ mod tests {
 			TorrentFile {
 				info: Info::SingleFile(SingleFile {
 					piece_length: 2,
-					pieces: pieces_str.to_owned(),
+					pieces: pieces.clone(),
 					private: None,
 					name: "startdusk".to_owned(),
 					length: 2,
@@ -377,7 +377,7 @@ mod tests {
 			TorrentFile {
 				info: Info::SingleFile(SingleFile {
 					piece_length: 262144,
-					pieces: "binary blob of the hashes of each piece".to_string(),
+					pieces: pieces.clone(),
 					private: None,
 					name: "debian-10.2.0-amd64-netinst.iso".to_owned(),
 					length: 351272960,
@@ -427,7 +427,7 @@ mod tests {
 				info: Info::MultipleFile(MultipleFile {
 					name: "startdusk".to_owned(),
 					piece_length: 2,
-					pieces: pieces_str.to_string(),
+					pieces,
 					private: None,
 					files: vec![
 						File {
@@ -538,7 +538,7 @@ mod tests {
 			TorrentFile {
 				info: Info::MultipleFile(MultipleFile {
 					piece_length: 262144,
-					pieces: "binary blob of the hashes of each piece".to_owned(),
+					pieces: vec![1, 2],
 					private: None,
 					name: "debian-10.2.0-amd64-netinst.iso".to_owned(),
 					files: vec![

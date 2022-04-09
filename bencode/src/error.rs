@@ -22,4 +22,10 @@ pub enum BencodeError {
 	IOError(#[from] ::std::io::Error),
 	#[error("unknown bencode error")]
 	Unknown,
+
+	#[error(transparent)]
+	StringUtf8Error(#[from] ::std::string::FromUtf8Error),
+
+	#[error(transparent)]
+	StrUtf8Error(#[from] ::std::str::Utf8Error),
 }

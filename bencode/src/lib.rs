@@ -30,6 +30,7 @@ pub enum BenObject {
     Int(i64),
     List(Vec<BenObject>),
     Dict(Dict),
+    Bytes(Vec<u8>),
 }
 
 impl From<u8> for BenObject {
@@ -86,10 +87,23 @@ impl From<String> for BenObject {
     }
 }
 
+impl<'a> From<&'a [u8]> for BenObject {
+    fn from(val: &'a [u8]) -> BenObject {
+        BenObject::Bytes(val.to_owned())
+    }
+}
+
+impl From<Vec<u8>> for BenObject {
+    fn from(val: Vec<u8>) -> BenObject {
+        BenObject::Bytes(val)
+    }
+}
+
 impl fmt::Display for BenObject {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             BenObject::String(ref string) => write!(f, r#""{}""#, string),
+            BenObject::Bytes(ref bytes) => write!(f, "[{:#02x}]", bytes.iter().format(", ")),
             BenObject::Int(ref int) => write!(f, "{}", int),
             BenObject::List(ref list) => write!(f, "[{}]", itertools::join(list, ", ")),
             BenObject::Dict(ref dict) => write!(

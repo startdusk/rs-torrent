@@ -21,6 +21,7 @@ impl BenObject {
 			BenObject::String(ref s) => wlen += Self::write_string(w, s)?,
 			BenObject::List(ref list) => wlen += Self::write_list(w, list)?,
 			BenObject::Dict(ref dict) => wlen += Self::write_dict(w, dict)?,
+			BenObject::Bytes(ref bytes) => wlen += Self::write_bytes(w, bytes)?,
 		}
 
 		Ok(wlen)
@@ -91,6 +92,22 @@ impl BenObject {
 		w.write_all(&[STR_DELIMITER])?;
 		wlen += 1;
 		w.write_all(s.as_bytes())?;
+		wlen += slen;
+		w.flush()?;
+		Ok(wlen)
+	}
+
+	fn write_bytes<W, B>(w: &mut W, b: B) -> Result<usize, BencodeError>
+	where
+		W: Write,
+		B: AsRef<[u8]>,
+	{
+		let b = b.as_ref();
+		let slen = b.len();
+		let mut wlen = Self::write_decimal(w, slen as i64)?;
+		w.write_all(&[STR_DELIMITER])?;
+		wlen += 1;
+		w.write_all(b)?;
 		wlen += slen;
 		w.flush()?;
 		Ok(wlen)

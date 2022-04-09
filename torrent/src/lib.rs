@@ -26,7 +26,7 @@ pub struct TorrentFile {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SingleFile {
     pub piece_length: i64,
-    pub pieces: String,
+    pub pieces: Vec<u8>,
     pub private: Option<i64>,
     pub name: String,
     pub length: i64,
@@ -36,7 +36,7 @@ pub struct SingleFile {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MultipleFile {
     pub piece_length: i64,
-    pub pieces: String,
+    pub pieces: Vec<u8>,
     pub private: Option<i64>,
     pub name: String,
     pub files: Vec<File>,
@@ -55,14 +55,19 @@ pub enum Info {
     MultipleFile(MultipleFile),
 }
 
+pub type Sha1Hash = [u8; 20];
+
 impl Info {
-    pub fn hash_bytes(&self) -> Result<Vec<u8>, TorrentError> {
+    pub fn hash_bytes(&self) -> Result<Sha1Hash, TorrentError> {
         let output = self.marshal()?;
-        Ok(Sha1::digest(output).to_vec())
+        let digest = Sha1::digest(&output);
+        let mut info_hash = [0; 20];
+        info_hash.copy_from_slice(&digest);
+        Ok(info_hash)
     }
     pub fn hash_string(&self) -> Result<String, TorrentError> {
         let output = self.marshal()?;
-        Ok(format!("{:x}", Sha1::digest(output)))
+        Ok(format!("{:X}", Sha1::digest(output)))
     }
 
     fn marshal(&self) -> Result<Vec<u8>, TorrentError> {
@@ -73,10 +78,7 @@ impl Info {
                     "piece length".to_owned(),
                     BenObject::Int(single.piece_length),
                 );
-                map.insert(
-                    "pieces".to_owned(),
-                    BenObject::String(single.pieces.clone()),
-                );
+                map.insert("pieces".to_owned(), BenObject::Bytes(single.pieces.clone()));
                 if let Some(private) = single.private {
                     map.insert("private".to_owned(), BenObject::Int(private));
                 }
@@ -94,7 +96,7 @@ impl Info {
                 );
                 map.insert(
                     "pieces".to_owned(),
-                    BenObject::String(multiple.pieces.clone()),
+                    BenObject::Bytes(multiple.pieces.clone()),
                 );
                 if let Some(private) = multiple.private {
                     map.insert("private".to_owned(), BenObject::Int(private));
@@ -135,24 +137,25 @@ mod test_info {
 
     #[test]
     fn test_into_single_file_hash() {
-        let shash = Info::SingleFile(SingleFile {
+        let info = Info::SingleFile(SingleFile {
             piece_length: 100,
-            pieces: "1d4bbcfed31c6e01e90d8e4099e39eb7".to_owned(),
+            pieces: vec![1, 2],
             private: Some(0),
             name: "startdusk".to_owned(),
             length: 100,
             md5sum: Some("todo!()".to_owned()),
-        })
-        .hash_string()
-        .unwrap();
+        });
 
-        assert_eq!(shash, "b2a6a322290f3f8b146490501898cccb12f66f63".to_owned());
+        assert_eq!(
+            info.hash_string().unwrap(),
+            "6067089A615467A306BE088FEB301AF27B4CE034".to_owned()
+        );
     }
     #[test]
     fn test_into_multiple_file_hash() {
         let shash = Info::MultipleFile(MultipleFile {
             piece_length: 262144,
-            pieces: "binary blob of the hashes of each piece".to_owned(),
+            pieces: vec![1, 2],
             private: Some(1),
             name: "debian-10.2.0-amd64-netinst.iso".to_owned(),
             files: vec![
@@ -171,6 +174,6 @@ mod test_info {
         .hash_string()
         .unwrap();
 
-        assert_eq!(shash, "330c0cca65ddcf93bafdc3fdf02a7c394bd5829d".to_owned());
+        assert_eq!(shash, "57EFD09D0E3C07FC983DFC2A7303A81556272A21".to_owned());
     }
 }

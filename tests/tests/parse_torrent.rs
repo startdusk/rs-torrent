@@ -4,6 +4,7 @@ use std::{
 };
 
 use torrent::{File, Info, TorrentFile};
+use tracker::Tracker;
 
 extern crate torrent;
 
@@ -12,7 +13,6 @@ fn test_parse_single_file_torrent() {
     let file = std::fs::File::open("tests/files/debian-iso.torrent").unwrap();
     let mut bytes = Vec::new();
     BufReader::new(file).read_to_end(&mut bytes).unwrap();
-
     let parsed = TorrentFile::parse(bytes).unwrap();
     assert_eq!(
         parsed.announce,
@@ -23,11 +23,12 @@ fn test_parse_single_file_torrent() {
         parsed.comment,
         Some(r#""Debian CD from cdimage.debian.org""#.to_owned())
     );
-
-    assert_eq!(
-        parsed.info.hash_string().unwrap(),
-        "fa67ff3a6ba35ef676a2790ed7671bad57ebeb44".to_owned()
-    );
+    let hash: [u8; 20] = [
+        40, 197, 81, 150, 245, 119, 83, 196, 10, 206, 182, 251, 88, 97, 126, 105, 149, 167, 237,
+        219,
+    ];
+    let info_hash = parsed.info.hash_bytes().unwrap();
+    assert_eq!(info_hash, hash);
     if let Info::SingleFile(single) = parsed.info {
         assert_eq!(single.name, "debian-11.2.0-amd64-netinst.iso".to_owned());
         assert_eq!(single.length, 396361728);
@@ -35,6 +36,26 @@ fn test_parse_single_file_torrent() {
     } else {
         panic!("not a single file torrent")
     }
+
+    // dbg!(Tracker::build_url(
+    //     parsed.announce,
+    //     tracker::Request {
+    //         info_hash,
+    //         peer_id: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,],
+    //         port: 6881,
+    //         uploaded: 0,
+    //         downloaded: 0,
+    //         left: 39631728,
+    //         compact: 1,
+    //         no_peer_id: None,
+    //         event: None,
+    //         ip: None,
+    //         numwant: None,
+    //         key: None,
+    //         tracker_id: None
+    //     }
+    // ))
+    // .unwrap();
 }
 
 #[test]

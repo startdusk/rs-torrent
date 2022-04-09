@@ -64,14 +64,15 @@ fn read_string(r: &mut ByteBuffer) -> Result<BenObject, BencodeError> {
 	if *b != STR_DELIMITER {
 		return Err(BencodeError::ExpectColonError);
 	}
-
-	let mut string = String::with_capacity(num as usize);
+	let mut vec = Vec::with_capacity(num as usize);
 	for _ in 0..num {
 		let b = r.next().ok_or(BencodeError::EOF)?;
-		string.push(char::from(*b));
+		vec.push(*b);
 	}
-
-	Ok(BenObject::String(string))
+	match String::from_utf8(vec.clone()) {
+		Ok(s) => Ok(BenObject::String(s)),
+		Err(_) => Ok(BenObject::Bytes(vec)),
+	}
 }
 
 // i333e 表示数字 333
@@ -115,6 +116,7 @@ fn read_decimal(r: &mut ByteBuffer) -> Result<(i64, i64), BencodeError> {
 		len += 1;
 	}
 }
+
 // ANCHOR_END: decoder
 
 fn check_num(num: u8) -> bool {
