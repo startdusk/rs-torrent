@@ -88,6 +88,7 @@ pub struct Tracker {
 impl Tracker {
     pub fn new(url: Url) -> Self {
         Self {
+            // TODO: attation timeout
             client: Client::new(),
             url,
         }
