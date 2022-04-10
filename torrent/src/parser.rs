@@ -228,7 +228,9 @@ impl TorrentFile {
 							path: Self::path(dict)?,
 						});
 					} else {
-						return Err(TorrentError::ParseError(Cow::Borrowed("")));
+						return Err(TorrentError::ParseError(Cow::Borrowed(
+							"file if not a dict",
+						)));
 					}
 				}
 				Ok(files)
@@ -309,7 +311,7 @@ impl TorrentFile {
 	}
 }
 
-// TODO: 注释掉测试，因为pieces是blob数据(我该如何写入blob数据呢？)
+// TODO: 注释掉测试，因为pieces是blob数据(我该如何写入blob(非utf8编码)数据呢？)
 // #[cfg(test)]
 // mod tests {
 // 	use super::*;
