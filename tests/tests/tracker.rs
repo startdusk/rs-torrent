@@ -1,4 +1,5 @@
 use std::io::{BufReader, Read};
+use std::time::Duration;
 use tracker::Request;
 
 use torrent::{Info, TorrentFile};
@@ -50,7 +51,7 @@ async fn test_tracker_find_peers() {
             })
             .await
             .unwrap();
-        assert_eq!(resp.interval, 900);
+        assert_eq!(resp.interval, Duration::from_secs(900));
 
         assert_eq!(resp.peers.len(), 50);
         dbg!(resp);

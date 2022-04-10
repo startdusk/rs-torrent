@@ -15,3 +15,6 @@ serde = { version = "1.0.136", features = ["derive"]}
 
 bencode = { path = "../bencode" }
 torrent = { path = "../torrent" }
+
+[dev-dependencies]
+mockito = "0.31.0"

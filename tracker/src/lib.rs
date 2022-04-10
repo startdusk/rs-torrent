@@ -1,5 +1,6 @@
 use bytes::Buf;
 use std::net::{IpAddr, Ipv4Addr};
+use std::time::Duration;
 use std::{borrow::Cow, net::SocketAddr};
 
 use bencode::{BenObject, Dict};
@@ -11,9 +12,13 @@ use reqwest::{Client, Url};
 
 pub mod error;
 
-/// Contains the characters that need to be URL encoded according to:
-///
-/// https://en.wikipedia.org/wiki/Percent-encoding#Types_of_URI_characters
+// encode url的时候，保留一些字符 info_hash 和 peer_id encode需要保留下面的字符
+// https://en.wikipedia.org/wiki/Percent-encoding#Types_of_URI_characters
+/// Note that all binary data in the URL (particularly info_hash and peer_id) must be properly escaped.
+/// This means any byte not in the set 0-9, a-z, A-Z, '.', '-', '_' and '~',
+/// must be encoded using the "%nn" format, where nn is the hexadecimal value of the byte. (See RFC1738 for details.)
+/// For a 20-byte hash of \x12\x34\x56\x78\x9a\xbc\xde\xf1\x23\x45\x67\x89\xab\xcd\xef\x12\x34\x56\x78\x9a,
+/// The right encoded form is %124Vx%9A%BC%DE%F1%23Eg%89%AB%CD%EF%124Vx%9A
 const URL_ENCODE_RESERVED: &AsciiSet = &NON_ALPHANUMERIC
     .remove(b'-')
     .remove(b'_')
@@ -63,12 +68,12 @@ pub struct Request {
     pub tracker_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Response {
     pub failure_reason: Option<String>,
     pub warning_message: Option<String>,
-    pub interval: usize,
-    pub min_interval: Option<usize>,
+    pub interval: Duration,
+    pub min_interval: Option<Duration>,
     pub tracker_id: Option<String>,
     pub complete: Option<i64>,
     pub incomplete: Option<i64>,
@@ -246,9 +251,11 @@ impl Tracker {
         }
     }
 
-    fn min_interval(&self, dict: &mut Dict) -> Result<Option<usize>, TrackerError> {
+    fn min_interval(&self, dict: &mut Dict) -> Result<Option<Duration>, TrackerError> {
         match dict.remove("min interval") {
-            Some(BenObject::Int(min_interval)) => Ok(Some(min_interval as usize)),
+            Some(BenObject::Int(min_interval)) => {
+                Ok(Some(Duration::from_secs(min_interval as u64)))
+            }
             Some(_) => {
                 return Err(TrackerError::ParseResponseError(Cow::Borrowed(
                     "`min interval` does not map to int.",
@@ -258,9 +265,9 @@ impl Tracker {
         }
     }
 
-    fn interval(&self, dict: &mut Dict) -> Result<usize, TrackerError> {
+    fn interval(&self, dict: &mut Dict) -> Result<Duration, TrackerError> {
         match dict.remove("interval") {
-            Some(BenObject::Int(interval)) => Ok(interval as usize),
+            Some(BenObject::Int(interval)) => Ok(Duration::from_secs(interval as u64)),
             Some(_) => {
                 return Err(TrackerError::ParseResponseError(Cow::Borrowed(
                     "`interval` does not map to int.",
@@ -340,12 +347,85 @@ impl Tracker {
 
 #[cfg(test)]
 mod tests {
+    use mockito::{mock, Matcher};
     use std::net::Ipv4Addr;
 
     use super::*;
 
     #[tokio::test]
-    async fn test_mock_tracker_resp() {}
+    async fn test_mock_tracker_resp() {
+        let addr = mockito::server_url();
+        let tracker = Tracker::new(addr.parse().unwrap());
+
+        let info_hash_str = "abcdefghij1234567890";
+        let mut info_hash = [0; 20];
+        info_hash.copy_from_slice(info_hash_str.as_bytes());
+
+        let peer_id_str = "cbt-2020-03-03-00000";
+        let mut peer_id = [0; 20];
+        peer_id.copy_from_slice(peer_id_str.as_bytes());
+
+        let req = Request {
+            info_hash,
+            peer_id,
+            port: 16,
+            downloaded: 1234,
+            uploaded: 1234,
+            left: 1234,
+            compact: 1,
+            no_peer_id: None,
+            numwant: Some(1),
+            ip: None,
+            event: None,
+            key: None,
+            tracker_id: None,
+        };
+        let peer_ip = Ipv4Addr::new(2, 156, 201, 254);
+        let peer_port = 49123;
+        let expected = Response {
+            tracker_id: None,
+            failure_reason: None,
+            warning_message: None,
+            interval: Duration::from_secs(15),
+            min_interval: Some(Duration::from_secs(10)),
+            complete: Some(5),
+            incomplete: Some(3),
+            peers: vec![SocketAddr::new(peer_ip.into(), peer_port)],
+        };
+
+        let mut encoded_resp = Vec::new();
+        // unterminated dict
+        encoded_resp.extend_from_slice(
+            b"d\
+            8:completei5e\
+            10:incompletei3e\
+            8:intervali15e\
+            12:min intervali10e",
+        );
+        // insert peers field into dict
+        encoded_resp.extend_from_slice(b"5:peers");
+        encoded_resp.extend_from_slice(&encode_compact_peers_list(&[(peer_ip, peer_port)]));
+        // terminate dict
+        encoded_resp.push(b'e');
+
+        let _m = mock("GET", "/")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("compact".into(), "1".into()),
+                Matcher::UrlEncoded("info_hash".into(), info_hash_str.into()),
+                Matcher::UrlEncoded("peer_id".into(), peer_id_str.into()),
+                Matcher::UrlEncoded("port".into(), req.port.to_string()),
+                Matcher::UrlEncoded("downloaded".into(), req.downloaded.to_string()),
+                Matcher::UrlEncoded("uploaded".into(), req.uploaded.to_string()),
+                Matcher::UrlEncoded("left".into(), req.left.to_string()),
+                Matcher::UrlEncoded("numwant".into(), req.numwant.unwrap().to_string()),
+            ]))
+            .with_status(200)
+            .with_body(encoded_resp)
+            .create();
+
+        let actual = tracker.find_peers(req).await.unwrap();
+        assert_eq!(actual, expected);
+    }
 
     fn encode_compact_peers_list(peers: &[(Ipv4Addr, u16)]) -> Vec<u8> {
         let encoded_peers: Vec<_> = peers
@@ -368,7 +448,3 @@ mod tests {
         encoded
     }
 }
-
-// 构建tracker url
-// 请求url获取响应
-// 解析响应
