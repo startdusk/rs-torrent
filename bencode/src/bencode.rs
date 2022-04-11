@@ -193,15 +193,32 @@ mod tests {
 
 	#[test]
 	fn test_bencode_string() {
-		let cases = [
-			("spam".to_string(), 6, "4:spam"),
-			("to".to_string(), 4, "2:to"),
-			("".to_string(), 2, "0:"),
+		struct Case {
+			source: String,
+			len: usize,
+			target: Vec<u8>,
+		};
+		let cases = vec![
+			Case {
+				source: "spam".to_string(),
+				len: 6,
+				target: "4:spam".as_bytes().to_vec(),
+			},
+			Case {
+				source: "to".to_string(),
+				len: 4,
+				target: "2:to".as_bytes().to_vec(),
+			},
+			Case {
+				source: "".to_string(),
+				len: 2,
+				target: "0:".as_bytes().to_vec(),
+			},
 		];
 		for cc in cases {
-			let vec = BenObject::String(cc.0).bencode().unwrap();
-			assert_eq!(vec.len(), cc.1);
-			assert_eq!(vec, cc.2.as_bytes().to_vec());
+			let vec = BenObject::String(cc.source).bencode().unwrap();
+			assert_eq!(vec.len(), cc.len);
+			assert_eq!(vec, cc.target);
 		}
 		let mut string = String::new();
 		for c in 'a'..'z' {

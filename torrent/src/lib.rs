@@ -3,8 +3,8 @@ use std::{collections::HashMap, path::PathBuf};
 use bencode::{BenObject, Dict};
 use sha1::{Digest, Sha1};
 
-#[macro_use]
-extern crate bencode;
+// #[macro_use]
+// extern crate bencode;
 
 mod error;
 mod marshal;
