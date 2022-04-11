@@ -2,8 +2,22 @@ use std::net::SocketAddr;
 
 use tokio::{io::AsyncReadExt, net::TcpStream};
 
-pub struct Handshake {
-    
+pub struct Handshake {}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Message {}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum MessageValue {
+    Choke = 0,
+    Unchoke = 1,
+    Interested = 2,
+    NotInterested = 3,
+    Have = 4,
+    Bitfield = 5,
+    Request = 6,
+    Block = 7,
+    Cancel = 8,
 }
 
 pub struct Peer;
