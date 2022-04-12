@@ -197,7 +197,7 @@ mod tests {
 			source: String,
 			len: usize,
 			target: Vec<u8>,
-		};
+		}
 		let cases = vec![
 			Case {
 				source: "spam".to_string(),

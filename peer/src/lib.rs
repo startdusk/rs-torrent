@@ -1,8 +1,9 @@
-use std::net::SocketAddr;
+mod error;
+mod handshake;
+
+use std::{io::copy, net::SocketAddr};
 
 use tokio::{io::AsyncReadExt, net::TcpStream};
-
-pub struct Handshake {}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Message {}
