@@ -61,6 +61,7 @@ async fn find_peers_from_single_file_torrent() {
     }
 }
 
+#[ignore]
 #[tokio::test]
 async fn find_peers_from_multiple_file_torrent() {
     // TODO: 国内种子发现没有announce

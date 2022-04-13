@@ -6,10 +6,8 @@ use std::fmt;
 mod macros;
 
 mod bencode;
-mod byte_buffer;
 mod error;
 mod parser;
-pub use crate::byte_buffer::ByteBuffer;
 pub use crate::error::BencodeError;
 
 const DICT_PREFIX: u8 = b'd';

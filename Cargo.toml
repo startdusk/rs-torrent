@@ -1,2 +1,2 @@
 [workspace]
-members = ["bencode", "torrent", "tracker", "peer", "tests"]
+members = ["bencode", "torrent", "tracker", "peer", "shared", "tests"]
